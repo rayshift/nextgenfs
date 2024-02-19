@@ -1,5 +1,6 @@
 package io.rayshift.translatefgo;
 
+import android.os.Build;
 import android.os.FileUtils;
 import android.os.RemoteException;
 import android.system.Os;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,8 +66,15 @@ public class NGFSService extends INGFSService.Stub {
         File file = new File(filename);
         try {
             error.IsSuccess = true;
-            Files.deleteIfExists(file.toPath());
-            return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Files.deleteIfExists(file.toPath());
+                return true;
+            }
+            else {
+                error.IsSuccess = false;
+                error.Error = "Android version too low.";
+                return false;
+            }
         }
         catch (Exception ex) {
             error.IsSuccess = false;
@@ -78,7 +87,14 @@ public class NGFSService extends INGFSService.Stub {
     public boolean GetFileExists(String filename, NGFSError error) throws RemoteException {
         File file = new File(filename);
         error.IsSuccess = true;
-        return Files.exists(file.toPath());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return Files.exists(file.toPath());
+        }
+        else {
+            error.IsSuccess = false;
+            error.Error = "Android version too low.";
+            return false;
+        }
     }
 
     @Override
@@ -135,9 +151,17 @@ public class NGFSService extends INGFSService.Stub {
         try {
             File input = new File(source);
             File output = new File(destination);
-            Files.copy(input.toPath(), output.toPath());
-            error.IsSuccess = true;
-            return true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Files.copy(input.toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                error.IsSuccess = true;
+                return true;
+            }
+            else {
+                error.IsSuccess = false;
+                error.Error = "Android version too low.";
+                return false;
+            }
         }
         catch (Exception ex) {
             error.IsSuccess = false;
